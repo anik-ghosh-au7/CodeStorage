@@ -7,11 +7,15 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Button,
+  Platform,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
+import RNFS from 'react-native-fs';
 
 const App = () => {
   const [singleFile, setSingleFile] = useState<any>('');
+  const [fileContent, setFileContent] = useState<any>(null);
 
   const selectOneFile = async () => {
     try {
@@ -34,6 +38,13 @@ const App = () => {
   console.log('Type : ' + singleFile.type);
   console.log('File Name : ' + singleFile.name);
   console.log('File Size : ' + singleFile.size);
+
+  if (singleFile.uri) {
+    RNFS.readFile(singleFile.uri, 'base64').then(content => {
+      setFileContent(singleFile.name + '-' + content);
+      // console.log('content ==>> ', content);
+    });
+  }
 
   return (
     <SafeAreaView style={{flex: 1}}>
@@ -68,6 +79,27 @@ const App = () => {
           URI: {singleFile.uri ? singleFile.uri : ''}
           {'\n'}
         </Text>
+        <Button
+          title="Write"
+          onPress={() => {
+            const writeData = fileContent.split('-');
+            var path: string = '';
+            if (Platform.OS === 'ios') {
+              path = `${RNFS.DocumentDirectoryPath}/CodeStorage`;
+            } else {
+              path = `${RNFS.ExternalStorageDirectoryPath}/CodeStorage`;
+            }
+            RNFS.mkdir(path);
+            path += `/${writeData[0]}`;
+            RNFS.writeFile(path, writeData[1], 'base64')
+              .then(() => {
+                console.log('FILE WRITTEN! Path ==>> ', path);
+              })
+              .catch(err => {
+                console.log(err.message);
+              });
+          }}
+        />
       </View>
     </SafeAreaView>
   );
